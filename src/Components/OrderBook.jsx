@@ -1,78 +1,150 @@
-import { motion } from 'framer-motion'
-import React, { useEffect, useState } from 'react'
+import { motion } from "framer-motion"
+import React, { useEffect, useState } from "react"
 
+const DummyOrder = (count, startingPrice, side) => {
+  const orders = []
+  let total = 0
 
-const DummyOrder = (count , startingPrice , side )=>{
-    const orders = []
-    let total = 0
+  for (let i = 0 ; i < count; i++) {
+    const size = +(Math.random() * 100).toFixed(2)
+    total += size
+    const price =
+      side === "sell"
+        ? +(startingPrice + i * 0.01).toFixed(2)
+        : +(startingPrice - i * 0.01).toFixed(2)
 
-    for(let i = 0 ; i< count ; i++){
-        const size =+ (Math.random()*100).toFixed(2)
-        total += size
-        const price = side === "sell" ? +(startingPrice + i * 0.01).toFixed(2) : (startingPrice - i * 0.01).toFixed(2)
-
-        orders.push({price , size , total : +total.toFixed(2) })
-    }
-    return orders
-
+    orders.push({ price, size, total: +total.toFixed(2) })
+  }
+  return orders
 }
 
-const OrderBook = ({side = "sell"}) => {
-    const [orders , setorders] = useState(DummyOrder(10,183.98,"sell"))
+const formatNumber = (num) =>
+  new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num)
 
-    useEffect(()=>{
-        const interval = setInterval(() => {
-            let total = 0
 
-            setorders((prev)=>(
-                prev.map((order)=>{
-                    const newSize = +(order.size + (Math.random()-0.5)*5).toFixed(2)
-                    total += Math.max(newSize, 0);
-                    return { ...order, size: Math.max(newSize, 0), total: +total.toFixed(2) };
-                })
-            ))
+const OrderBook = () => {
+  const [sellOrders, setSellOrders] = useState(DummyOrder(7, 273.98, "sell"))
+  const [buyOrders, setBuyOrders] = useState(DummyOrder(7, 296.97, "buy"))
+  const [currentPrice] = useState(183.98)
+  
 
-        }, 200);
-        return ()=>clearInterval(interval)
-    })
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSellOrders((prev) => {
+        let total = 0
+        return prev.map((order) => {
+          const newSize = +(order.size + (Math.random() - 0.5) * 5).toFixed(2)
+          total += Math.max(newSize, 0)
+          return {
+            ...order,
+            size: Math.max(newSize, 0),
+            total: +total.toFixed(2),
+          }
+        })
+      },)
+
+      setBuyOrders((prev) => {
+        let total = 0
+        return prev.map((order) => {
+          const newSize = +(order.size + (Math.random() - 0.5) * 5).toFixed(2)
+          total += Math.max(newSize, 0)
+          return {
+            ...order,
+            size: Math.max(newSize, 0),
+            total: +total.toFixed(2),
+          }
+        })
+      })
+    }, 450)
+    return () => clearInterval(interval)
+  })
+
+  const maxSellTotal = Math.max(...sellOrders.map((o) => o.total))
+  const maxBuyTotal = Math.max(...buyOrders.map((o) => o.total))
+
+  const OrderRow = ({ order, side, maxTotal }) => (
+    <motion.div
+      key={order.price}
+      className={`relative rounded-xs group flex items-center justify-center overflow-hidden h-14 mb-1 `}
+      layout
+      transition={{ duration: 0.1  }}
+    >
+
+      
+      <motion.div
+        className={`absolute h-full rounded-xs top-0 right-0 opacity-20 ${
+          side === "sell" ? "bg-red-400" : "bg-green-400"
+        }`}
+        style={{ 
+            width: `${(order.total / maxTotal) * 100}%` ,
+        transition : "width 0.4s ease-in-out "}}
+      />
+      
+      <motion.div
+        className={`absolute h-full rounded-xs top-0 right-0 opacity-80 ${
+          side === "sell" ? "bg-red-500/50" : "bg-green-500/50"
+        }`}
+        style={{ 
+            width: `${(order.size / maxTotal) * 100}%` ,
+            transition : "width 0.4s ease-in-out "}}
+      />
+
+      
+      <div className="relative flex w-full justify-between text-sm z-10 px-2 font-mono">
+        <span className={side === "sell" ? "text-red-600" : "text-green-600"}>
+          {formatNumber(order.price)}
+        </span>
+        <span>{formatNumber(order.size)}</span>
+        <span>{formatNumber(order.total)}</span>
+      </div>
+
+    </motion.div>
+  )
 
   return (
-    <div className='' >
-        {side=="sell"?
-            <div>
-                <span className='mr-10'>Price (USD)</span>
-                <span className='mr-2'>Size (SQL)</span>
-                <span className='mr-2'>Total (SOL)</span>
-            </div> : <div></div> }
-        {
-            orders.map((order)=>(
-                <motion.div
-                key={order.price}
-                className='relative flex  items-center justify-center overflow-hidden h-6 mb-1 '
-                animate={{opacity:1}}
-                initial={{opacity:0}}
-                transition={{duration:0.3}}>
-                    <div
-                    className={`absolute h-full w-full top-0 left-0 opacity-20 ${side === "sell" ? "bg-red-500" : "bg-green-500" } `}
-                    style={{width: `${Math.min(order.total,300)}px`}}>
-                    </div>
-                    <div
-                    className={`absolute h-full top-0 left-0 opacity-80 ${
-                        side === "sell" ? "bg-red-700" : "bg-green-700"
-                    } `}
-                    style={{width: `${Math.min(order.size,300)}px`}}>
-                    </div>
-                    <div className="relative flex w-full justify-between text-sm  z-10 px-2">
-                        <span className={side === "sell" ? "text-red-600" : "text-green-600"}>
-                            {order.price}
-                        </span>
-                        <span>{order.size}</span>
-                        <span>{order.total}</span>
-                    </div>
-                </motion.div>
-            ))
-        }
+    <div className="bg-gray-900 text-white  w-80 h-96 flex flex-col">
+      <div className="flex justify-between relative px-2 py-2 text-xs text-gray-400 border-b border-gray-700">
+        <span>Price (USD)</span>
+        <span>Size</span>
+        <span>Total</span>
+      </div>
+
+    
+
+      <div className="flex-1 flex flex-col-reverse overflow-hidden p-1">
+        {sellOrders.map((order) => (
+          <OrderRow
+            key={`sell-${order.price}`}
+            order={order}
+            side="sell"
+            maxTotal={maxSellTotal}
+          />
+        ))}
+      </div>
+
+    
+      <div className="flex items-center justify-center py-2 border-y border-gray-700">
+        <span className="text-green-400 font-mono text-sm font-bold">
+          {formatNumber(currentPrice)}
+        </span>
+      </div>
+
+    
+      <div className="flex-1 flex flex-col overflow-hidden p-1">
+        {buyOrders.map((order) => (
+          <OrderRow
+            key={`buy-${order.price}`}
+            order={order}
+            side="buy"
+            maxTotal={maxBuyTotal}
+          />
+        ))}
+      </div>
     </div>
+   
   )
 }
 
