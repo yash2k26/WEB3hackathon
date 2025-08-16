@@ -14,10 +14,9 @@ function App() {
 
       </div> */}
 
-      <div className=' p-6 bg-slate-900 text-white min-h-screen  '>
-        <div >
-          <OrderBook side='sell' />
-          <OrderBook side="buy" />
+      <div className='p-6 bg-slate-900 text-white min-h-screen'>
+        <div className='max-w-[420px] mx-auto'>
+          <OrderBook />
         </div>
       </div>
       
